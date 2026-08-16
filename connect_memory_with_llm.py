@@ -65,3 +65,4 @@ user_query=input("Write Query Here: ")
 response = QA_chain.invoke({'query':user_query})
 print("RESULT: ", response["result"])
 print("source documents: ", response["source_documents"])
+
