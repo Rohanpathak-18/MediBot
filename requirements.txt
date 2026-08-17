@@ -24,3 +24,17 @@ python-dotenv
 # Machine Learning Utilities
 numpy
 scikit-learn
+
+streamlit
+langchain
+langchain-classic
+langchain-community
+langchain-core
+langchain-huggingface
+langchain-groq
+sentence-transformers
+faiss-cpu
+python-dotenv
+torch
+torchvision
+transformers
