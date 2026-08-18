@@ -2,8 +2,8 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-
-from .routes.chat import router
+# Use absolute import instead of relative dot import
+from routes.chat import router
 
 # --------------------------------------------------
 # Create FastAPI Application
@@ -19,11 +19,10 @@ app = FastAPI(
 # CORS Configuration
 # --------------------------------------------------
 
-# Allow local dev frontend as well as any production domain (if set via ENV)
 origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-    "*"  # Change or append your deployed frontend URL here
+    "*"  # Append production frontend URLs here
 ]
 
 app.add_middleware(
