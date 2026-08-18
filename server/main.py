@@ -4,7 +4,10 @@ from fastapi.middleware.cors import CORSMiddleware
 
 # Use absolute import instead of relative dot import
 from routes.chat import router
+from services.rag_service import ask_medibot
 
+# Usage inside a route or function:
+# rag_service.ask_medibot(question)
 # --------------------------------------------------
 # Create FastAPI Application
 # --------------------------------------------------
