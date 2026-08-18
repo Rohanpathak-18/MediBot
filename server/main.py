@@ -2,7 +2,8 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from routes.chat import router
+
+from .routes.chat import router
 
 # --------------------------------------------------
 # Create FastAPI Application
