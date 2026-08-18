@@ -2,12 +2,10 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-# Use absolute import instead of relative dot import
+# Absolute imports for your routes and services
 from routes.chat import router
 from services.rag_service import ask_medibot
 
-# Usage inside a route or function:
-# rag_service.ask_medibot(question)
 # --------------------------------------------------
 # Create FastAPI Application
 # --------------------------------------------------
@@ -53,8 +51,12 @@ def root():
         "status": "running"
     }
 
+# --------------------------------------------------
 # Entrypoint for local execution
+# --------------------------------------------------
+
 if __name__ == "__main__":
     import uvicorn
+    # Render passes the PORT environment variable dynamically
     port = int(os.environ.get("PORT", 8000))
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
+    uvicorn.run("server.main:app", host="0.0.0.0", port=port, reload=True)
