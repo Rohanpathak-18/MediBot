@@ -1,8 +1,8 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from routes.chat import router
-
 
 # --------------------------------------------------
 # Create FastAPI Application
@@ -14,35 +14,30 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# --------------------------------------------------
+# CORS Configuration
+# --------------------------------------------------
 
-# --------------------------------------------------
-# CORS
-# --------------------------------------------------
+# Allow local dev frontend as well as any production domain (if set via ENV)
+origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "*"  # Change or append your deployed frontend URL here
+]
 
 app.add_middleware(
     CORSMiddleware,
-
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173"
-    ],
-
+    allow_origins=origins,
     allow_credentials=True,
-
     allow_methods=["*"],
-
-    allow_headers=["*"]
+    allow_headers=["*"],
 )
-
 
 # --------------------------------------------------
 # Register Routes
 # --------------------------------------------------
 
-app.include_router(
-    router
-)
-
+app.include_router(router)
 
 # --------------------------------------------------
 # Root Endpoint
@@ -50,8 +45,13 @@ app.include_router(
 
 @app.get("/")
 def root():
-
     return {
         "message": "Welcome to MediBot API",
         "status": "running"
     }
+
+# Entrypoint for local execution
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
