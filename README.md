@@ -371,7 +371,7 @@ For medical concerns, users should consult a qualified healthcare professional.
 **Rohan Kumar Pathak**
 
 Computer Science Engineering Student
-Interested in **Software Development, Backend Development, AI/ML, and Generative AI**.
+Interested in **Software Development, Backend Development and Generative AI**.
 
 ---
 
