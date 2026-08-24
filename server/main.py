@@ -4,11 +4,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 # Absolute imports for your routes and services
 from server.routes.chat import router
-from services.rag_service import ask_medibot
+from server.services.rag_service import ask_medibot
 
-# --------------------------------------------------
-# Create FastAPI Application
-# --------------------------------------------------
+
 
 app = FastAPI(
     title="MediBot API",
@@ -16,9 +14,6 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# --------------------------------------------------
-# CORS Configuration
-# --------------------------------------------------
 
 origins = [
     "http://localhost:5173",
@@ -34,15 +29,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --------------------------------------------------
-# Register Routes
-# --------------------------------------------------
+
 
 app.include_router(router)
 
-# --------------------------------------------------
-# Root Endpoint
-# --------------------------------------------------
+
 
 @app.get("/")
 def root():
@@ -51,9 +42,7 @@ def root():
         "status": "running"
     }
 
-# --------------------------------------------------
-# Entrypoint for local execution
-# --------------------------------------------------
+
 
 if __name__ == "__main__":
     import uvicorn

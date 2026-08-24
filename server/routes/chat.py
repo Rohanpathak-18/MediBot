@@ -8,16 +8,12 @@ router = APIRouter(
     tags=["Chat"]
 )
 
-# --------------------------------------------------
-# Request Model
-# --------------------------------------------------
+
 
 class ChatRequest(BaseModel):
     message: str
 
-# --------------------------------------------------
-# Health Check
-# --------------------------------------------------
+
 
 @router.get("/health")
 def health_check():
@@ -26,9 +22,7 @@ def health_check():
         "message": "MediBot API is running"
     }
 
-# --------------------------------------------------
-# Chat Endpoint
-# --------------------------------------------------
+
 
 @router.post("/chat")
 def chat(request: ChatRequest):
