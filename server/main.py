@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 # Absolute imports for your routes and services
-from routes.chat import router
+from server.routes.chat import router
 from services.rag_service import ask_medibot
 
 # --------------------------------------------------
