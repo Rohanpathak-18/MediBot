@@ -12,11 +12,8 @@ from langchain_groq import ChatGroq
 load_dotenv()
 
 
-# --------------------------------------------------
-# Configuration
-# --------------------------------------------------
 
-DB_FAISS_PATH = "vectorstore/db_faiss"
+DB_FAISS_PATH = "server/vectorstore/db_faiss"
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
@@ -27,18 +24,12 @@ if not GROQ_API_KEY:
     )
 
 
-# --------------------------------------------------
-# Load Embedding Model
-# --------------------------------------------------
 
 embedding_model = HuggingFaceEmbeddings(
     model_name="sentence-transformers/all-MiniLM-L6-v2"
 )
 
 
-# --------------------------------------------------
-# Load FAISS Vector Database
-# --------------------------------------------------
 
 db = FAISS.load_local(
     DB_FAISS_PATH,
@@ -47,9 +38,6 @@ db = FAISS.load_local(
 )
 
 
-# --------------------------------------------------
-# Custom RAG Prompt
-# --------------------------------------------------
 
 CUSTOM_PROMPT_TEMPLATE = """
 Use the pieces of information provided in the context
@@ -87,9 +75,6 @@ def set_custom_prompt():
     return prompt
 
 
-# --------------------------------------------------
-# Create RAG Chain
-# --------------------------------------------------
 
 qa_chain = RetrievalQA.from_chain_type(
 
@@ -115,9 +100,7 @@ qa_chain = RetrievalQA.from_chain_type(
 )
 
 
-# --------------------------------------------------
-# Ask MediBot
-# --------------------------------------------------
+
 
 def ask_medibot(question: str):
 
