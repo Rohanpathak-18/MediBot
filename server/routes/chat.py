@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from services.rag_service import ask_medibot
+from server.services.rag_service import ask_medibot
 
 router = APIRouter(
     prefix="/api",
