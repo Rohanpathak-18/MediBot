@@ -6,46 +6,62 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-
-#step1 : Load Raw Pdf
+# Step 1: Load Raw PDF
 
 DATA_PATH = "data/"
 
 def load_pdf_files(data):
-  loader = DirectoryLoader(data,
-                           glob ='*.pdf',
-                           loader_cls=PyPDFLoader)
-  
-  documents = loader.load()
-  return documents
+    loader = DirectoryLoader(
+        data,
+        glob="*.pdf",
+        loader_cls=PyPDFLoader
+    )
 
-documents = load_pdf_files(data = DATA_PATH)
-# print("Length of PDF pages", len(documents))
+    documents = loader.load()
+    return documents
 
-#stpe2 : create Chunks
+documents = load_pdf_files(DATA_PATH)
+
+print("Number of PDF pages:", len(documents))
+
+
+# Step 2: Create Chunks
 
 def create_chunks(extracted_data):
-  text_splitter = RecursiveCharacterTextSplitter(chunk_size=500,
-                                                 chunk_overlap=50)
-  text_chunks = text_splitter.split_documents(extracted_data)
-  return text_chunks
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=500,
+        chunk_overlap=50
+    )
 
-text_chunks = create_chunks(extracted_data=documents)
-# print("Length of Text Chunks:", len(text_chunks))
+    text_chunks = text_splitter.split_documents(extracted_data)
+    return text_chunks
 
-#step3 : Create vector Embedding
+text_chunks = create_chunks(documents)
+
+print("Number of text chunks:", len(text_chunks))
+
+
+# Step 3: Create Vector Embeddings
 
 def get_embedding_model():
-  embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-  return embedding_model
+    embedding_model = HuggingFaceEmbeddings(
+        model_name="sentence-transformers/all-MiniLM-L6-v2"
+    )
+    return embedding_model
 
 embedding_model = get_embedding_model()
 
-# step4 : store embedding in FAISS
+
+# Step 4: Store Embeddings in FAISS
 
 DB_FAISS_PATH = "vectorstore/db_faiss"
-db =  FAISS.from_documents(text_chunks, embedding_model)
+
+db = FAISS.from_documents(
+    text_chunks,
+    embedding_model
+)
+
 db.save_local(DB_FAISS_PATH)
 
-
-
+print("FAISS vectorstore created successfully!")
+print("Location:", DB_FAISS_PATH)

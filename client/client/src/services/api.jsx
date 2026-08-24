@@ -2,7 +2,7 @@ import axios from "axios";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_URL ||
-  "http://127.0.0.1:8000/api";
+  "https://medibot-xuy1.onrender.com";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -12,7 +12,7 @@ const api = axios.create({
 });
 
 export const sendMessage = async (message) => {
-  const response = await api.post("/chat", {
+  const response = await api.post("/api/chat", {
     message,
   });
 
@@ -20,7 +20,7 @@ export const sendMessage = async (message) => {
 };
 
 export const checkHealth = async () => {
-  const response = await api.get("/health");
+  const response = await api.get("/api/health");
 
   return response.data;
 };
