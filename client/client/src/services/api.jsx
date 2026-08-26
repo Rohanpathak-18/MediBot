@@ -11,11 +11,6 @@ const api = axios.create({
   },
 });
 
-
-// =========================
-// SEND CHAT MESSAGE
-// =========================
-
 export const sendMessage = async (
   message,
   documentId = null
@@ -30,11 +25,6 @@ export const sendMessage = async (
 
   return response.data;
 };
-
-
-// =========================
-// UPLOAD DOCUMENT
-// =========================
 
 export const uploadDocument = async (file) => {
   const formData = new FormData();
@@ -54,11 +44,6 @@ export const uploadDocument = async (file) => {
   return response.data;
 };
 
-
-// =========================
-// HEALTH CHECK
-// =========================
-
 export const checkHealth = async () => {
   const response = await api.get(
     "/api/health"
@@ -66,6 +51,5 @@ export const checkHealth = async () => {
 
   return response.data;
 };
-
 
 export default api;
