@@ -1,12 +1,10 @@
 import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-# Absolute imports for your routes and services
 from server.routes.chat import router
-from server.services.rag_service import ask_medibot
 from server.routes.document_routes import router as document_router
-
 
 
 app = FastAPI(
@@ -15,8 +13,9 @@ app = FastAPI(
     version="1.0.0"
 )
 
-app.include_router(document_router)
+
 app.include_router(router)
+app.include_router(document_router)
 
 
 origins = [
@@ -24,6 +23,7 @@ origins = [
     "http://127.0.0.1:5173",
     "https://medibot-web.onrender.com",
 ]
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -34,22 +34,9 @@ app.add_middleware(
 )
 
 
-
-app.include_router(router)
-
-
-
 @app.get("/")
 def root():
     return {
         "message": "Welcome to MediBot API",
         "status": "running"
     }
-
-
-
-if __name__ == "__main__":
-    import uvicorn
-    # Render passes the PORT environment variable dynamically
-    port = int(os.environ.get("PORT", 8000))
-    uvicorn.run("server.main:app", host="0.0.0.0", port=port, reload=True)

@@ -1,60 +1,24 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from pydantic import BaseModel
 
 from server.services.rag_service import ask_medibot
 
 
 router = APIRouter(
-    prefix="/api",
+    prefix="/api/chat",
     tags=["Chat"]
 )
 
 
 class ChatRequest(BaseModel):
-    message: str
-    document_id: str | None = None
+    question: str
 
 
-@router.get("/health")
-def health_check():
-    return {
-        "success": True,
-        "message": "MediBot API is running"
-    }
-
-
-@router.post("/chat")
+@router.post("/")
 def chat(request: ChatRequest):
 
-    try:
+    response = ask_medibot(request.question)
 
-        question = request.message.strip()
-
-        if not question:
-            raise HTTPException(
-                status_code=400,
-                detail="Message cannot be empty"
-            )
-
-        result = ask_medibot(
-            question,
-            document_id=request.document_id
-        )
-
-        return {
-            "success": True,
-            "answer": result["answer"],
-            "sources": result["sources"]
-        }
-
-    except HTTPException:
-        raise
-
-    except Exception as e:
-
-        print("ERROR:", str(e))
-
-        raise HTTPException(
-            status_code=500,
-            detail=str(e)
-        )
+    return {
+        "answer": response["result"]
+    }
