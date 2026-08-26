@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 # Absolute imports for your routes and services
 from server.routes.chat import router
 from server.services.rag_service import ask_medibot
+from server.routes.document_routes import router as document_router
 
 
 
@@ -13,6 +14,9 @@ app = FastAPI(
     description="AI Medical Assistant using RAG",
     version="1.0.0"
 )
+
+app.include_router(document_router)
+app.include_router(router)
 
 
 origins = [

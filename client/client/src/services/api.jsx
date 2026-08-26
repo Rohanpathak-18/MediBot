@@ -11,18 +11,61 @@ const api = axios.create({
   },
 });
 
-export const sendMessage = async (message) => {
-  const response = await api.post("/api/chat", {
-    message,
-  });
+
+// =========================
+// SEND CHAT MESSAGE
+// =========================
+
+export const sendMessage = async (
+  message,
+  documentId = null
+) => {
+  const response = await api.post(
+    "/api/chat",
+    {
+      message,
+      document_id: documentId,
+    }
+  );
 
   return response.data;
 };
+
+
+// =========================
+// UPLOAD DOCUMENT
+// =========================
+
+export const uploadDocument = async (file) => {
+  const formData = new FormData();
+
+  formData.append("file", file);
+
+  const response = await api.post(
+    "/documents/upload",
+    formData,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }
+  );
+
+  return response.data;
+};
+
+
+// =========================
+// HEALTH CHECK
+// =========================
 
 export const checkHealth = async () => {
-  const response = await api.get("/api/health");
+  const response = await api.get(
+    "/api/health"
+  );
 
   return response.data;
 };
+
 
 export default api;

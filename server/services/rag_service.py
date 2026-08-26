@@ -8,10 +8,15 @@ from langchain_community.vectorstores import FAISS
 from langchain_core.prompts import PromptTemplate
 from langchain_groq import ChatGroq
 
+from server.services.document_service import load_document_vectorstore
+
 
 load_dotenv()
 
 
+# =========================================================
+# EXISTING MEDIBOT VECTORSTORE
+# =========================================================
 
 DB_FAISS_PATH = "server/vectorstore/db_faiss"
 
@@ -24,12 +29,18 @@ if not GROQ_API_KEY:
     )
 
 
+# =========================================================
+# EMBEDDING MODEL
+# =========================================================
 
 embedding_model = HuggingFaceEmbeddings(
     model_name="sentence-transformers/all-MiniLM-L6-v2"
 )
 
 
+# =========================================================
+# LOAD EXISTING MEDICAL KNOWLEDGE
+# =========================================================
 
 db = FAISS.load_local(
     DB_FAISS_PATH,
@@ -38,6 +49,9 @@ db = FAISS.load_local(
 )
 
 
+# =========================================================
+# PROMPT
+# =========================================================
 
 CUSTOM_PROMPT_TEMPLATE = """
 Use the pieces of information provided in the context
@@ -75,14 +89,24 @@ def set_custom_prompt():
     return prompt
 
 
+# =========================================================
+# LLM
+# =========================================================
+
+llm = ChatGroq(
+    model="openai/gpt-oss-20b",
+    temperature=0.0,
+    groq_api_key=GROQ_API_KEY
+)
+
+
+# =========================================================
+# NORMAL MEDIBOT QA CHAIN
+# =========================================================
 
 qa_chain = RetrievalQA.from_chain_type(
 
-    llm=ChatGroq(
-        model="openai/gpt-oss-20b",
-        temperature=0.0,
-        groq_api_key=GROQ_API_KEY
-    ),
+    llm=llm,
 
     chain_type="stuff",
 
@@ -100,9 +124,76 @@ qa_chain = RetrievalQA.from_chain_type(
 )
 
 
+# =========================================================
+# USER DOCUMENT QA CHAIN
+# =========================================================
+
+def create_document_qa_chain(vectorstore):
+
+    qa_chain = RetrievalQA.from_chain_type(
+
+        llm=llm,
+
+        chain_type="stuff",
+
+        retriever=vectorstore.as_retriever(
+            search_kwargs={
+                "k": 3
+            }
+        ),
+
+        return_source_documents=True,
+
+        chain_type_kwargs={
+            "prompt": set_custom_prompt()
+        }
+    )
+
+    return qa_chain
 
 
-def ask_medibot(question: str):
+# =========================================================
+# ASK MEDIBOT
+# =========================================================
+
+def ask_medibot(
+    question: str,
+    document_id: str | None = None
+):
+
+    # =====================================================
+    # MODE 1: USER UPLOADED DOCUMENT
+    # =====================================================
+
+    if document_id:
+
+        print(
+            f"Using uploaded document: {document_id}"
+        )
+
+        vectorstore = load_document_vectorstore(
+            document_id
+        )
+
+        qa_chain = create_document_qa_chain(
+            vectorstore
+        )
+
+    # =====================================================
+    # MODE 2: DEFAULT MEDICAL KNOWLEDGE
+    # =====================================================
+
+    else:
+
+        print(
+            "Using default MediBot medical knowledge"
+        )
+
+        qa_chain = globals()["qa_chain"]
+
+    # =====================================================
+    # RUN RAG
+    # =====================================================
 
     response = qa_chain.invoke(
         {
@@ -115,6 +206,10 @@ def ask_medibot(question: str):
     source_documents = response[
         "source_documents"
     ]
+
+    # =====================================================
+    # FORMAT SOURCES
+    # =====================================================
 
     sources = []
 

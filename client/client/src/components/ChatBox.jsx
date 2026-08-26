@@ -18,15 +18,29 @@ import { sendMessage } from "../services/api";
 import ChatMessage from "./ChatMessage";
 import LoadingMessage from "./LoadingMessage";
 import WelcomeScreen from "./WelcomeScreen";
+import DocumentUpload from "./DocumentUpload";
 
 
 function ChatBox() {
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
 
-  const messagesEndRef = useRef(null);
-  const textareaRef = useRef(null);
+  const [messages, setMessages] =
+    useState([]);
+
+  const [input, setInput] =
+    useState("");
+
+  const [loading, setLoading] =
+    useState(false);
+
+  const [documentId, setDocumentId] =
+    useState(null);
+
+
+  const messagesEndRef =
+    useRef(null);
+
+  const textareaRef =
+    useRef(null);
 
 
   /* =========================
@@ -34,80 +48,145 @@ function ChatBox() {
   ========================= */
 
   useEffect(() => {
+
     messagesEndRef.current?.scrollIntoView({
       behavior: "smooth",
     });
+
   }, [messages, loading]);
+
+
+  /* =========================
+     DOCUMENT UPLOADED
+  ========================= */
+
+  const handleDocumentUploaded = (
+    data
+  ) => {
+
+    console.log(
+      "Document uploaded:",
+      data
+    );
+
+    setDocumentId(
+      data.document_id
+    );
+  };
+
+
+  /* =========================
+     DOCUMENT REMOVED
+  ========================= */
+
+  const handleDocumentRemoved = () => {
+
+    console.log(
+      "Document removed"
+    );
+
+    setDocumentId(null);
+  };
 
 
   /* =========================
      SEND QUESTION
   ========================= */
 
-  const submitQuestion = async (question) => {
-    const trimmed = question.trim();
+  const submitQuestion = async (
+    question
+  ) => {
+
+    const trimmed =
+      question.trim();
+
 
     if (!trimmed || loading) {
       return;
     }
 
-    // Add user's message immediately
+
     const userMessage = {
       role: "user",
       content: trimmed,
     };
+
 
     setMessages((previous) => [
       ...previous,
       userMessage,
     ]);
 
+
     setInput("");
+
     setLoading(true);
 
 
     try {
-      const response = await sendMessage(trimmed);
+
+      const response =
+        await sendMessage(
+          trimmed,
+          documentId
+        );
+
 
       const botMessage = {
         role: "assistant",
+
         content:
           response?.answer ||
           "I couldn't generate a response.",
+
         sources:
           response?.sources || [],
       };
+
 
       setMessages((previous) => [
         ...previous,
         botMessage,
       ]);
 
+
     } catch (error) {
+
       console.error(
         "MediBot API error:",
         error
       );
 
+
       const errorMessage = {
         role: "assistant",
+
         content:
+          error?.response?.data?.detail ||
+          error?.message ||
           "I couldn't connect to the MediBot server. Please make sure the FastAPI backend is running.",
+
         sources: [],
       };
+
 
       setMessages((previous) => [
         ...previous,
         errorMessage,
       ]);
 
+
     } finally {
+
       setLoading(false);
 
-      // Focus input again
+
       setTimeout(() => {
+
         textareaRef.current?.focus();
+
       }, 100);
+
     }
   };
 
@@ -116,7 +195,10 @@ function ChatBox() {
      FORM SUBMIT
   ========================= */
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (
+    event
+  ) => {
+
     event.preventDefault();
 
     await submitQuestion(input);
@@ -127,13 +209,17 @@ function ChatBox() {
      SUGGESTION CLICK
   ========================= */
 
-  const handleSuggestion = async (question) => {
+  const handleSuggestion = async (
+    question
+  ) => {
+
     if (loading) {
       return;
     }
 
-    // Directly send the suggestion
-    await submitQuestion(question);
+    await submitQuestion(
+      question
+    );
   };
 
 
@@ -142,15 +228,21 @@ function ChatBox() {
   ========================= */
 
   const clearChat = () => {
+
     if (loading) {
       return;
     }
 
+
     setMessages([]);
+
     setInput("");
 
+
     setTimeout(() => {
+
       textareaRef.current?.focus();
+
     }, 100);
   };
 
@@ -159,11 +251,15 @@ function ChatBox() {
      ENTER KEY
   ========================= */
 
-  const handleKeyDown = (event) => {
+  const handleKeyDown = (
+    event
+  ) => {
+
     if (
       event.key === "Enter" &&
       !event.shiftKey
     ) {
+
       event.preventDefault();
 
       handleSubmit(event);
@@ -172,16 +268,20 @@ function ChatBox() {
 
 
   return (
+
     <motion.section
       className="chat-shell"
+
       initial={{
         opacity: 0,
         y: 25,
       }}
+
       animate={{
         opacity: 1,
         y: 0,
       }}
+
       transition={{
         duration: 0.7,
         delay: 0.25,
@@ -206,6 +306,7 @@ function ChatBox() {
 
 
         {messages.length > 0 && (
+
           <button
             type="button"
             className="clear-button"
@@ -220,6 +321,7 @@ function ChatBox() {
             </span>
 
           </button>
+
         )}
 
       </div>
@@ -231,34 +333,29 @@ function ChatBox() {
 
       <div className="messages-area">
 
-        {/* 
-          IMPORTANT:
-
-          WelcomeScreen is shown ONLY when
-          there are NO messages.
-
-          Once the user asks a question,
-          messages.length becomes greater than 0
-          and WelcomeScreen completely disappears.
-        */}
-
         {messages.length === 0 ? (
 
           <WelcomeScreen
-            onSuggestion={handleSuggestion}
+            onSuggestion={
+              handleSuggestion
+            }
           />
 
         ) : (
 
           <div className="messages-list">
 
-            {messages.map((message, index) => (
-              <ChatMessage
-                key={`${message.role}-${index}`}
-                message={message}
-                index={index}
-              />
-            ))}
+            {messages.map(
+              (message, index) => (
+
+                <ChatMessage
+                  key={`${message.role}-${index}`}
+                  message={message}
+                  index={index}
+                />
+
+              )
+            )}
 
 
             {loading && (
@@ -278,10 +375,46 @@ function ChatBox() {
 
 
       {/* =========================
-          INPUT
+          INPUT AREA
       ========================= */}
 
       <div className="input-area">
+
+
+        {/* =========================
+            DOCUMENT UPLOAD
+        ========================= */}
+
+        <DocumentUpload
+          onDocumentUploaded={
+            handleDocumentUploaded
+          }
+
+          onDocumentRemoved={
+            handleDocumentRemoved
+          }
+        />
+
+
+        {/* =========================
+            DOCUMENT STATUS
+        ========================= */}
+
+        {documentId && (
+
+          <div className="mb-2 px-2 text-xs text-green-600">
+
+            Questions will use your
+            uploaded document.
+
+          </div>
+
+        )}
+
+
+        {/* =========================
+            CHAT FORM
+        ========================= */}
 
         <form
           className="input-form"
@@ -292,33 +425,53 @@ function ChatBox() {
 
             <textarea
               ref={textareaRef}
+
               value={input}
+
               onChange={(event) =>
-                setInput(event.target.value)
+                setInput(
+                  event.target.value
+                )
               }
-              onKeyDown={handleKeyDown}
-              placeholder="Ask MediBot anything about your health..."
+
+              onKeyDown={
+                handleKeyDown
+              }
+
+              placeholder={
+                documentId
+                  ? "Ask a question about your document..."
+                  : "Ask MediBot anything about your health..."
+              }
+
               rows={1}
+
               disabled={loading}
             />
 
 
             <motion.button
               type="submit"
+
               className="send-button"
+
               disabled={
                 loading ||
                 !input.trim()
               }
+
               whileHover={{
                 scale:
-                  input.trim() && !loading
+                  input.trim() &&
+                  !loading
                     ? 1.05
                     : 1,
               }}
+
               whileTap={{
                 scale:
-                  input.trim() && !loading
+                  input.trim() &&
+                  !loading
                     ? 0.95
                     : 1,
               }}
@@ -355,15 +508,21 @@ function ChatBox() {
             <ShieldCheck size={13} />
 
             <span>
-              Responses are based on
-              MediBot's medical knowledge base.
+
+              {documentId
+                ? "Responses are based on your uploaded document."
+                : "Responses are based on MediBot's medical knowledge base."
+              }
+
             </span>
 
           </div>
 
 
           <span className="keyboard-hint">
+
             ENTER TO SEND
+
           </span>
 
         </div>

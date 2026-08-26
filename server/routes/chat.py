@@ -3,16 +3,16 @@ from pydantic import BaseModel
 
 from server.services.rag_service import ask_medibot
 
+
 router = APIRouter(
     prefix="/api",
     tags=["Chat"]
 )
 
 
-
 class ChatRequest(BaseModel):
     message: str
-
+    document_id: str | None = None
 
 
 @router.get("/health")
@@ -23,10 +23,11 @@ def health_check():
     }
 
 
-
 @router.post("/chat")
 def chat(request: ChatRequest):
+
     try:
+
         question = request.message.strip()
 
         if not question:
@@ -35,7 +36,10 @@ def chat(request: ChatRequest):
                 detail="Message cannot be empty"
             )
 
-        result = ask_medibot(question)
+        result = ask_medibot(
+            question,
+            document_id=request.document_id
+        )
 
         return {
             "success": True,
@@ -47,7 +51,9 @@ def chat(request: ChatRequest):
         raise
 
     except Exception as e:
+
         print("ERROR:", str(e))
+
         raise HTTPException(
             status_code=500,
             detail=str(e)
