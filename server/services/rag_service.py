@@ -18,7 +18,11 @@ load_dotenv()
 # EXISTING MEDIBOT VECTORSTORE
 # =========================================================
 
-DB_FAISS_PATH = "server/vectorstore/db_faiss"
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+DB_FAISS_PATH = BASE_DIR / "vectorstore" / "db_faiss"
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
@@ -43,7 +47,7 @@ embedding_model = HuggingFaceEmbeddings(
 # =========================================================
 
 db = FAISS.load_local(
-    DB_FAISS_PATH,
+    str(DB_FAISS_PATH),
     embedding_model,
     allow_dangerous_deserialization=True
 )
