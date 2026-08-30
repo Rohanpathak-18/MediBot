@@ -10,35 +10,51 @@ from langchain_classic.chains import RetrievalQA
 load_dotenv()
 
 DB_FAISS_PATH = "vectorstore/db_faiss"
-
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 
-def get_vectorstore():
-    embedding_model = HuggingFaceEmbeddings(
-        model_name="sentence-transformers/all-MiniLM-L6-v2"
-    )
+# --------------------------------------------------
+# 1. Load embeddings ONCE
+# --------------------------------------------------
 
-    return FAISS.load_local(
-        DB_FAISS_PATH,
-        embedding_model,
-        allow_dangerous_deserialization=True
-    )
+embedding_model = HuggingFaceEmbeddings(
+    model_name="sentence-transformers/all-MiniLM-L6-v2"
+)
 
 
-def get_qa_chain():
+# --------------------------------------------------
+# 2. Load FAISS ONCE
+# --------------------------------------------------
 
-    vectorstore = get_vectorstore()
+vectorstore = FAISS.load_local(
+    DB_FAISS_PATH,
+    embedding_model,
+    allow_dangerous_deserialization=True
+)
 
-    prompt_template = """
-Use the pieces of information provided in the context to answer the user's question.
 
-If the answer is available in the context, answer using that information.
+# --------------------------------------------------
+# 3. Create retriever ONCE
+# --------------------------------------------------
 
-If the answer is NOT available in the context, say:
+retriever = vectorstore.as_retriever(
+    search_kwargs={"k": 2}
+)
+
+
+# --------------------------------------------------
+# 4. Prompt
+# --------------------------------------------------
+
+prompt_template = """
+Use the provided medical context to answer the user's question.
+
+Rules:
+- Use only information from the context.
+- Do not make up information.
+- If the answer is not available in the context, say:
 "I don't know based on the provided medical information."
-
-Do not make up information.
+- Answer clearly and concisely.
 
 Context:
 {context}
@@ -46,38 +62,46 @@ Context:
 Question:
 {question}
 
-Answer directly.
+Answer:
 """
 
-    prompt = PromptTemplate(
-        template=prompt_template,
-        input_variables=["context", "question"]
-    )
+prompt = PromptTemplate(
+    template=prompt_template,
+    input_variables=["context", "question"]
+)
 
-    llm = ChatGroq(
-        model="openai/gpt-oss-20b",
-        temperature=0.0,
-        groq_api_key=GROQ_API_KEY
-    )
 
-    qa_chain = RetrievalQA.from_chain_type(
-        llm=llm,
-        chain_type="stuff",
-        retriever=vectorstore.as_retriever(
-            search_kwargs={"k": 3}
-        ),
-        return_source_documents=True,
-        chain_type_kwargs={
-            "prompt": prompt
-        }
-    )
+# --------------------------------------------------
+# 5. Create LLM ONCE
+# --------------------------------------------------
 
-    return qa_chain
+llm = ChatGroq(
+    model="openai/gpt-oss-20b",
+    temperature=0.0,
+    groq_api_key=GROQ_API_KEY,
+)
 
+
+# --------------------------------------------------
+# 6. Create QA chain ONCE
+# --------------------------------------------------
+
+qa_chain = RetrievalQA.from_chain_type(
+    llm=llm,
+    chain_type="stuff",
+    retriever=retriever,
+    return_source_documents=True,
+    chain_type_kwargs={
+        "prompt": prompt
+    }
+)
+
+
+# --------------------------------------------------
+# 7. Ask MediBot
+# --------------------------------------------------
 
 def ask_medibot(user_query):
-
-    qa_chain = get_qa_chain()
 
     response = qa_chain.invoke({
         "query": user_query
