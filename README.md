@@ -1,4 +1,4 @@
-# 🩺 MediBot — RAG-Powered Medical Information Assistant
+# 🩺 MediBot —- RAG-Powered Medical Information Assistant
 
 MediBot is an **AI-powered medical information assistant** built using **Retrieval-Augmented Generation (RAG)**. It allows users to ask medical and healthcare-related questions and receive answers grounded in information retrieved from a medical knowledge base.
 
