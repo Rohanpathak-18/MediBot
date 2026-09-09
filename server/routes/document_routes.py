@@ -14,11 +14,28 @@ from server.services.document_service import (
 )
 
 
+# =========================================================
+# PROJECT PATH
+# =========================================================
+
+BASE_DIR = Path(__file__).resolve().parents[2]
+
+UPLOAD_DIR = BASE_DIR / "server" / "data" / "uploads"
+
+
+# =========================================================
+# ROUTER
+# =========================================================
+
 router = APIRouter(
     prefix="/documents",
     tags=["Documents"]
 )
 
+
+# =========================================================
+# UPLOAD DOCUMENT
+# =========================================================
 
 @router.post("/upload")
 async def upload_document(
@@ -32,10 +49,26 @@ async def upload_document(
     }
 
 
+    # -----------------------------------------------------
+    # Validate filename
+    # -----------------------------------------------------
+
+    if not file.filename:
+
+        raise HTTPException(
+            status_code=400,
+            detail="Filename is required."
+        )
+
+
     extension = Path(
         file.filename
     ).suffix.lower()
 
+
+    # -----------------------------------------------------
+    # Validate extension
+    # -----------------------------------------------------
 
     if extension not in allowed_extensions:
 
@@ -50,35 +83,65 @@ async def upload_document(
 
     try:
 
-        # Generate ONE ID
+        # -------------------------------------------------
+        # Generate document ID
+        # -------------------------------------------------
+
         document_id = str(
             uuid.uuid4()
         )
 
 
-        # Make sure upload directory exists
-        upload_dir = Path(
-            "server/data/uploads"
-        )
+        # -------------------------------------------------
+        # Create upload directory
+        # -------------------------------------------------
 
-        upload_dir.mkdir(
+        UPLOAD_DIR.mkdir(
             parents=True,
             exist_ok=True
         )
 
 
-        # Save uploaded file
+        # -------------------------------------------------
+        # Create filename
+        # -------------------------------------------------
+
         filename = (
             f"{document_id}{extension}"
         )
 
+
         file_path = (
-            upload_dir / filename
+            UPLOAD_DIR / filename
         )
 
 
+        # -------------------------------------------------
+        # Read uploaded file
+        # -------------------------------------------------
+
         contents = await file.read()
 
+
+        # -------------------------------------------------
+        # Basic file size check
+        # 10 MB
+        # -------------------------------------------------
+
+        max_size = 10 * 1024 * 1024
+
+
+        if len(contents) > max_size:
+
+            raise HTTPException(
+                status_code=400,
+                detail="File size must be below 10 MB."
+            )
+
+
+        # -------------------------------------------------
+        # Save file
+        # -------------------------------------------------
 
         with open(
             file_path,
@@ -88,32 +151,65 @@ async def upload_document(
             f.write(contents)
 
 
-        # Process document
-        result = process_document(
-            str(file_path),
-            extension,
-            document_id
+        print(
+            "Document saved:",
+            file_path
         )
 
 
+        # -------------------------------------------------
+        # Process document
+        # -------------------------------------------------
+
+        result = process_document(
+
+            str(file_path),
+
+            extension,
+
+            document_id
+
+        )
+
+
+        # -------------------------------------------------
+        # Return response
+        # -------------------------------------------------
+
         return {
+
             "success": True,
+
             "document_id": result[
                 "document_id"
             ],
+
             "filename": file.filename,
-            "chunks": result["chunks"]
+
+            "chunks": result[
+                "chunks"
+            ]
+
         }
+
+
+    except HTTPException:
+
+        raise
 
 
     except Exception as e:
 
         print(
             "DOCUMENT UPLOAD ERROR:",
-            str(e)
+            repr(e)
         )
 
+
         raise HTTPException(
+
             status_code=500,
+
             detail=str(e)
+
         )

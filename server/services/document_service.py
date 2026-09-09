@@ -1,35 +1,37 @@
 from pathlib import Path
 
-from pypdf import PdfReader
-from docx import Document as DocxDocument
+from langchain_community.document_loaders import (
+    PyPDFLoader,
+    TextLoader,
+    Docx2txtLoader
+)
 
-from langchain_core.documents import Document
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_text_splitters import (
+    RecursiveCharacterTextSplitter
+)
+
+from langchain_huggingface import (
+    HuggingFaceEmbeddings
+)
+
 from langchain_community.vectorstores import FAISS
 
 
 # =========================================================
-# DIRECTORIES
+# PROJECT PATH
 # =========================================================
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parents[2]
 
-UPLOAD_DIR = BASE_DIR / "data" / "uploads"
+
+# =========================================================
+# MAIN VECTORSTORE PATH
+# =========================================================
 
 VECTORSTORE_DIR = (
-    BASE_DIR / "vectorstore" / "uploads"
-)
-
-
-UPLOAD_DIR.mkdir(
-    parents=True,
-    exist_ok=True
-)
-
-VECTORSTORE_DIR.mkdir(
-    parents=True,
-    exist_ok=True
+    BASE_DIR /
+    "vectorstore" /
+    "db_faiss"
 )
 
 
@@ -37,79 +39,215 @@ VECTORSTORE_DIR.mkdir(
 # EMBEDDINGS
 # =========================================================
 
-embedding_model = HuggingFaceEmbeddings(
-    model_name="sentence-transformers/all-MiniLM-L6-v2"
-)
+def get_embedding_model():
+
+    return HuggingFaceEmbeddings(
+
+        model_name=
+        "sentence-transformers/all-MiniLM-L6-v2"
+
+    )
 
 
 # =========================================================
-# EXTRACT TEXT
+# LOAD DOCUMENT
 # =========================================================
 
-def extract_text(
+def load_document(
     file_path: str,
     extension: str
 ):
 
     extension = extension.lower()
 
-    # -----------------------------
+
+    # -----------------------------------------------------
     # PDF
-    # -----------------------------
+    # -----------------------------------------------------
 
     if extension == ".pdf":
 
-        reader = PdfReader(file_path)
-
-        text = ""
-
-        for page in reader.pages:
-
-            page_text = page.extract_text()
-
-            if page_text:
-                text += page_text + "\n"
-
-        return text
-
-    # -----------------------------
-    # DOCX
-    # -----------------------------
-
-    elif extension == ".docx":
-
-        document = DocxDocument(
+        loader = PyPDFLoader(
             file_path
         )
 
-        text = "\n".join(
-            paragraph.text
-            for paragraph in document.paragraphs
-            if paragraph.text.strip()
+
+    # -----------------------------------------------------
+    # DOCX
+    # -----------------------------------------------------
+
+    elif extension == ".docx":
+
+        loader = Docx2txtLoader(
+            file_path
         )
 
-        return text
 
-    # -----------------------------
+    # -----------------------------------------------------
     # TXT
-    # -----------------------------
+    # -----------------------------------------------------
 
     elif extension == ".txt":
 
-        with open(
+        loader = TextLoader(
             file_path,
-            "r",
-            encoding="utf-8",
-            errors="ignore"
-        ) as file:
+            encoding="utf-8"
+        )
 
-            return file.read()
 
     else:
 
         raise ValueError(
-            "Unsupported file type"
+            "Unsupported file type."
         )
+
+
+    documents = loader.load()
+
+
+    if not documents:
+
+        raise ValueError(
+            "No text could be extracted from the document."
+        )
+
+
+    return documents
+
+
+# =========================================================
+# SPLIT DOCUMENT
+# =========================================================
+
+def split_documents(documents):
+
+    text_splitter = RecursiveCharacterTextSplitter(
+
+        chunk_size=500,
+
+        chunk_overlap=50,
+
+        length_function=len
+
+    )
+
+
+    chunks = text_splitter.split_documents(
+        documents
+    )
+
+
+    if not chunks:
+
+        raise ValueError(
+            "Document could not be split into chunks."
+        )
+
+
+    return chunks
+
+
+# =========================================================
+# CREATE / UPDATE VECTORSTORE
+# =========================================================
+
+def create_vectorstore(
+    chunks
+):
+
+    embeddings = get_embedding_model()
+
+
+    # -----------------------------------------------------
+    # Make directory
+    # -----------------------------------------------------
+
+    VECTORSTORE_DIR.mkdir(
+
+        parents=True,
+
+        exist_ok=True
+
+    )
+
+
+    # -----------------------------------------------------
+    # If existing vectorstore exists,
+    # load and add new documents.
+    # -----------------------------------------------------
+
+    index_file = (
+        VECTORSTORE_DIR /
+        "index.faiss"
+    )
+
+    pickle_file = (
+        VECTORSTORE_DIR /
+        "index.pkl"
+    )
+
+
+    if (
+        index_file.exists()
+        and
+        pickle_file.exists()
+    ):
+
+        print(
+            "Existing FAISS vectorstore found."
+        )
+
+
+        vectorstore = FAISS.load_local(
+
+            str(VECTORSTORE_DIR),
+
+            embeddings,
+
+            allow_dangerous_deserialization=True
+
+        )
+
+
+        vectorstore.add_documents(
+            chunks
+        )
+
+
+    else:
+
+        print(
+            "Creating new FAISS vectorstore."
+        )
+
+
+        vectorstore = FAISS.from_documents(
+
+            chunks,
+
+            embeddings
+
+        )
+
+
+    # -----------------------------------------------------
+    # Save vectorstore
+    # -----------------------------------------------------
+
+    vectorstore.save_local(
+
+        str(VECTORSTORE_DIR)
+
+    )
+
+
+    print(
+        "FAISS vectorstore saved at:",
+        VECTORSTORE_DIR
+    )
+
+
+    return vectorstore
 
 
 # =========================================================
@@ -117,102 +255,88 @@ def extract_text(
 # =========================================================
 
 def process_document(
+
     file_path: str,
+
     extension: str,
+
     document_id: str
+
 ):
 
-    text = extract_text(
+    print(
+        "Processing document:",
+        file_path
+    )
+
+
+    # -----------------------------------------------------
+    # Load
+    # -----------------------------------------------------
+
+    documents = load_document(
+
         file_path,
+
         extension
-    )
 
-    if not text.strip():
-
-        raise ValueError(
-            "Could not extract text from document"
-        )
-
-
-    # =====================================================
-    # SPLIT TEXT
-    # =====================================================
-
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000,
-        chunk_overlap=200
     )
 
 
-    chunks = text_splitter.split_documents(
-        [
-            Document(
-                page_content=text,
-                metadata={
-                    "source": Path(
-                        file_path
-                    ).name
-                }
-            )
-        ]
+    print(
+        "Pages/documents loaded:",
+        len(documents)
     )
 
 
-    # =====================================================
-    # CREATE FAISS
-    # =====================================================
+    # -----------------------------------------------------
+    # Add metadata
+    # -----------------------------------------------------
 
-    vectorstore = FAISS.from_documents(
-        chunks,
-        embedding_model
+    for document in documents:
+
+        document.metadata[
+            "document_id"
+        ] = document_id
+
+
+        document.metadata[
+            "source_file"
+        ] = Path(file_path).name
+
+
+    # -----------------------------------------------------
+    # Split
+    # -----------------------------------------------------
+
+    chunks = split_documents(
+        documents
     )
 
 
-    # =====================================================
-    # SAVE
-    # =====================================================
-
-    document_vectorstore_path = (
-        VECTORSTORE_DIR / document_id
+    print(
+        "Chunks created:",
+        len(chunks)
     )
 
 
-    vectorstore.save_local(
-        str(document_vectorstore_path)
+    # -----------------------------------------------------
+    # Create vectorstore
+    # -----------------------------------------------------
+
+    create_vectorstore(
+        chunks
     )
 
+
+    # -----------------------------------------------------
+    # Return result
+    # -----------------------------------------------------
 
     return {
+
         "document_id": document_id,
+
         "chunks": len(chunks)
+
     }
-
-
-# =========================================================
-# LOAD USER DOCUMENT VECTORSTORE
-# =========================================================
-
-def load_document_vectorstore(
-    document_id: str
-):
-
-    vectorstore_path = (
-        VECTORSTORE_DIR / document_id
-    )
-
-
-    if not vectorstore_path.exists():
-
-        raise FileNotFoundError(
-            "Document vectorstore not found"
-        )
-
-
-    vectorstore = FAISS.load_local(
-        str(vectorstore_path),
-        embedding_model,
-        allow_dangerous_deserialization=True
-    )
-
-
-    return vectorstore

@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
@@ -20,7 +19,9 @@ router = APIRouter(
 # =========================================================
 
 class ChatRequest(BaseModel):
+
     message: str
+
     document_id: str | None = None
 
 
@@ -33,7 +34,10 @@ def chat(request: ChatRequest):
 
     try:
 
-        # Check empty message
+        # -------------------------------------------------
+        # Validate message
+        # -------------------------------------------------
+
         if not request.message.strip():
 
             raise HTTPException(
@@ -53,7 +57,10 @@ def chat(request: ChatRequest):
         )
 
 
+        # -------------------------------------------------
         # Ask MediBot
+        # -------------------------------------------------
+
         response = ask_medibot(
             request.message
         )
@@ -64,15 +71,22 @@ def chat(request: ChatRequest):
         )
 
 
+        # -------------------------------------------------
         # Get answer
+        # -------------------------------------------------
+
         answer = response.get(
             "result",
             "I couldn't generate a response."
         )
 
 
+        # -------------------------------------------------
         # Convert source documents
+        # -------------------------------------------------
+
         sources = []
+
 
         for document in response.get(
             "source_documents",
@@ -80,19 +94,29 @@ def chat(request: ChatRequest):
         ):
 
             sources.append({
+
                 "content": document.page_content,
+
                 "metadata": document.metadata
+
             })
 
 
-        # Return JSON expected by React
+        # -------------------------------------------------
+        # Response for React
+        # -------------------------------------------------
+
         return {
+
             "answer": answer,
+
             "sources": sources
+
         }
 
 
     except HTTPException:
+
         raise
 
 
@@ -103,8 +127,11 @@ def chat(request: ChatRequest):
             repr(error)
         )
 
-        raise HTTPException(
-            status_code=500,
-            detail=str(error)
-        )
 
+        raise HTTPException(
+
+            status_code=500,
+
+            detail=str(error)
+
+        )

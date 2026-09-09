@@ -1,8 +1,9 @@
-
 import os
+from pathlib import Path
 from functools import lru_cache
 
 from dotenv import load_dotenv
+
 from langchain_groq import ChatGroq
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
@@ -16,7 +17,15 @@ from langchain_classic.chains import RetrievalQA
 
 load_dotenv()
 
-DB_FAISS_PATH = "vectorstore/db_faiss"
+
+# Project root:
+# C:\Gen-AI\MediBot
+BASE_DIR = Path(__file__).resolve().parents[2]
+
+
+# Main FAISS vectorstore
+DB_FAISS_PATH = BASE_DIR / "vectorstore" / "db_faiss"
+
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
@@ -42,11 +51,44 @@ def get_vectorstore():
 
     embedding_model = get_embedding_model()
 
-    return FAISS.load_local(
-        DB_FAISS_PATH,
+    print("Loading FAISS vectorstore...")
+    print("FAISS path:", DB_FAISS_PATH)
+
+    # Check folder
+    if not DB_FAISS_PATH.exists():
+
+        raise FileNotFoundError(
+            f"FAISS vectorstore directory not found: "
+            f"{DB_FAISS_PATH}"
+        )
+
+    # Check FAISS index
+    index_file = DB_FAISS_PATH / "index.faiss"
+
+    if not index_file.exists():
+
+        raise FileNotFoundError(
+            f"index.faiss not found at: {index_file}"
+        )
+
+    # Check pickle file
+    pickle_file = DB_FAISS_PATH / "index.pkl"
+
+    if not pickle_file.exists():
+
+        raise FileNotFoundError(
+            f"index.pkl not found at: {pickle_file}"
+        )
+
+    vectorstore = FAISS.load_local(
+        str(DB_FAISS_PATH),
         embedding_model,
         allow_dangerous_deserialization=True
     )
+
+    print("FAISS vectorstore loaded successfully.")
+
+    return vectorstore
 
 
 # =========================================================
@@ -57,6 +99,7 @@ def get_vectorstore():
 def get_qa_chain():
 
     vectorstore = get_vectorstore()
+
 
     # -----------------------------------------------------
     # Prompt
@@ -84,6 +127,7 @@ Question:
 Answer:
 """
 
+
     prompt = PromptTemplate(
         template=prompt_template,
         input_variables=[
@@ -92,8 +136,9 @@ Answer:
         ]
     )
 
+
     # -----------------------------------------------------
-    # Groq LLM
+    # Groq API key
     # -----------------------------------------------------
 
     if not GROQ_API_KEY:
@@ -102,12 +147,18 @@ Answer:
             "GROQ_API_KEY is not configured."
         )
 
+
+    # -----------------------------------------------------
+    # LLM
+    # -----------------------------------------------------
+
     llm = ChatGroq(
         model="openai/gpt-oss-20b",
         temperature=0.0,
         groq_api_key=GROQ_API_KEY,
         max_tokens=300
     )
+
 
     # -----------------------------------------------------
     # Retriever
@@ -118,6 +169,7 @@ Answer:
             "k": 2
         }
     )
+
 
     # -----------------------------------------------------
     # Retrieval QA
@@ -132,6 +184,7 @@ Answer:
             "prompt": prompt
         }
     )
+
 
     return qa_chain
 
@@ -148,11 +201,23 @@ def ask_medibot(user_query):
             "Question cannot be empty."
         )
 
+
     qa_chain = get_qa_chain()
+
 
     response = qa_chain.invoke({
         "query": user_query.strip()
     })
+
+
+    # IMPORTANT:
+    # No comma after the closing }
+    #
+    # Previously:
+    #
+    # return {...},
+    #
+    # That returned a tuple instead of a dictionary.
 
     return {
         "result": response.get(
