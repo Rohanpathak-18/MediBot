@@ -12,32 +12,12 @@ const api = axios.create({
 });
 
 export const sendMessage = async (
-  message,
-  documentId = null
+  message
 ) => {
   const response = await api.post(
-    "/api/chat",
+    "/api/chat/",
     {
       message,
-      document_id: documentId,
-    }
-  );
-
-  return response.data;
-};
-
-export const uploadDocument = async (file) => {
-  const formData = new FormData();
-
-  formData.append("file", file);
-
-  const response = await api.post(
-    "/documents/upload",
-    formData,
-    {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
     }
   );
 

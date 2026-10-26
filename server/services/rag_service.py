@@ -18,13 +18,15 @@ from langchain_classic.chains import RetrievalQA
 load_dotenv()
 
 
-# Project root:
-# C:\Gen-AI\MediBot
+# Project root
 BASE_DIR = Path(__file__).resolve().parents[2]
+
+# Load the server-local environment file regardless of the process cwd.
+load_dotenv(BASE_DIR / "server" / ".env")
 
 
 # Main FAISS vectorstore
-DB_FAISS_PATH = BASE_DIR / "vectorstore" / "db_faiss"
+DB_FAISS_PATH = BASE_DIR / "server" / "vectorstore" / "db_faiss"
 
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")

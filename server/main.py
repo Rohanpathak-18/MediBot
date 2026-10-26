@@ -26,19 +26,11 @@ app = FastAPI(
 
 from server.routes.chat import router as chat_router
 
-from server.routes.document_routes import (
-    router as document_router
-)
 
 
 app.include_router(
     chat_router
 )
-
-app.include_router(
-    document_router
-)
-
 
 # =========================================================
 # CORS

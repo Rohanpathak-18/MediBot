@@ -22,7 +22,6 @@ class ChatRequest(BaseModel):
 
     message: str
 
-    document_id: str | None = None
 
 
 # =========================================================
@@ -50,12 +49,6 @@ def chat(request: ChatRequest):
             "Received question:",
             request.message
         )
-
-        print(
-            "Document ID:",
-            request.document_id
-        )
-
 
         # -------------------------------------------------
         # Ask MediBot

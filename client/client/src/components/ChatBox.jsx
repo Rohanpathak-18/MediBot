@@ -18,7 +18,6 @@ import { sendMessage } from "../services/api";
 import ChatMessage from "./ChatMessage";
 import LoadingMessage from "./LoadingMessage";
 import WelcomeScreen from "./WelcomeScreen";
-import DocumentUpload from "./DocumentUpload";
 
 
 function ChatBox() {
@@ -31,10 +30,6 @@ function ChatBox() {
 
   const [loading, setLoading] =
     useState(false);
-
-  const [documentId, setDocumentId] =
-    useState(null);
-
 
   const messagesEndRef =
     useRef(null);
@@ -54,39 +49,6 @@ function ChatBox() {
     });
 
   }, [messages, loading]);
-
-
-  /* =========================
-     DOCUMENT UPLOADED
-  ========================= */
-
-  const handleDocumentUploaded = (
-    data
-  ) => {
-
-    console.log(
-      "Document uploaded:",
-      data
-    );
-
-    setDocumentId(
-      data.document_id
-    );
-  };
-
-
-  /* =========================
-     DOCUMENT REMOVED
-  ========================= */
-
-  const handleDocumentRemoved = () => {
-
-    console.log(
-      "Document removed"
-    );
-
-    setDocumentId(null);
-  };
 
 
   /* =========================
@@ -127,8 +89,7 @@ function ChatBox() {
 
       const response =
         await sendMessage(
-          trimmed,
-          documentId
+          trimmed
         );
 
 
@@ -382,37 +343,6 @@ function ChatBox() {
 
 
         {/* =========================
-            DOCUMENT UPLOAD
-        ========================= */}
-
-        <DocumentUpload
-          onDocumentUploaded={
-            handleDocumentUploaded
-          }
-
-          onDocumentRemoved={
-            handleDocumentRemoved
-          }
-        />
-
-
-        {/* =========================
-            DOCUMENT STATUS
-        ========================= */}
-
-        {documentId && (
-
-          <div className="mb-2 px-2 text-xs text-green-600">
-
-            Questions will use your
-            uploaded document.
-
-          </div>
-
-        )}
-
-
-        {/* =========================
             CHAT FORM
         ========================= */}
 
@@ -438,11 +368,7 @@ function ChatBox() {
                 handleKeyDown
               }
 
-              placeholder={
-                documentId
-                  ? "Ask a question about your document..."
-                  : "Ask MediBot anything about your health..."
-              }
+              placeholder="Ask MediBot anything about your health..."
 
               rows={1}
 
@@ -509,10 +435,7 @@ function ChatBox() {
 
             <span>
 
-              {documentId
-                ? "Responses are based on your uploaded document."
-                : "Responses are based on MediBot's medical knowledge base."
-              }
+              Responses are based on MediBot's medical knowledge base.
 
             </span>
 
